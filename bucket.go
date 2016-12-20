@@ -82,6 +82,22 @@ func (b Bucket) Has(fp Fingerprint) bool {
 	return false
 }
 
+func (b Bucket) Count(fp Fingerprint) uint8 {
+	for _, c := range b {
+		switch CompareFingerprints(fp, c.fp) {
+		case 0:
+			return 0
+		case 1:
+			return c.count
+		case 2:
+			continue
+		}
+		// shouldn't get here
+		panic("Unexpected result from comparison")
+	}
+	return 0
+}
+
 func (b Bucket) Remove(fp Fingerprint) bool {
 
 	// Removes fp from matching cell

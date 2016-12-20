@@ -62,6 +62,20 @@ func TestHt32(t *testing.T) {
 	if success {
 		t.Error("Should not find deleted data")
 	}
+
+	// Add data multiple times
+	for i := 0; i < 10; i++ {
+		_, success = ht32.Add(datas[100])
+		if !success {
+			t.Error("Could not add data")
+		}
+	}
+
+	// Check count
+	_, count := ht32.GetCount(datas[100])
+	if count != 10 {
+		t.Errorf("Expected count=%d; got count=%d\n", 10, count)
+	}
 }
 
 // Benching

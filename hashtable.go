@@ -14,6 +14,7 @@ type HashTable interface {
 	ConcurrentLookup([]byte) (int, bool)
 	Delete([]byte) (int, bool)
 	Lookup([]byte) (int, bool)
+	GetCount([]byte) (int, uint8)
 	Size() int
 }
 
@@ -129,7 +130,7 @@ func Hash(data []byte, hash hash.Hash) []byte {
 }
 
 // Shuffles the hash so a different
-// remainder is extracted each permutation
+// remainder is extracted next permutation
 func Shuffle(h []byte) {
 	copy(h, append(h[1:], h[0]))
 	i := int(h[0]) % len(h)
@@ -193,6 +194,27 @@ func (ht *hashTable) Lookup(data []byte) (int, bool) {
 		return -1, false
 	}
 	return bucket, true
+}
+
+func (ht *hashTable) GetCount(data []byte) (int, uint8) {
+	h := Hash(data, ht.hash)
+	bucket, count := 0, uint8(0)
+	for i := 0; i < len(ht.table); i += ht.sub {
+		r := ht.rem(h)
+		b, fp := r%ht.sub+i, ht.fp(r)
+		if c := ht.table[b].Count(fp); c > 0 {
+			if count > 0 {
+				panic("Found multiple matching fingerprints")
+			}
+			bucket = b
+			count = c
+		}
+		Shuffle(h)
+	}
+	if count == 0 {
+		return -1, 0
+	}
+	return bucket, count
 }
 
 func (ht *hashTable) ConcurrentLookup(data []byte) (int, bool) {
