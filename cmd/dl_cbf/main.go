@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/zballs/dl_cbf"
+	"github.com/zbo14/dl_cbf"
 )
 
 func main() {
-	fmt.Println("hello world")
 	ht, _ := dl_cbf.NewHashTable(32, 4, 5, 20, nil)
 	data1 := []byte("hello world")
 	data2 := []byte("hello universe")
@@ -17,5 +16,7 @@ func main() {
 	ht.Add(data3)
 	ht.Add(data3)
 	ht.Delete(data3)
-	ht.ConcurrentLookup(data1)
+	_, count := ht.GetCount(data3)
+	fmt.Println(count)
+	fmt.Println(ht)
 }

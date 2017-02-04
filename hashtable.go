@@ -2,10 +2,10 @@ package dl_cbf
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/binary"
 	"github.com/pkg/errors"
 	"hash"
-	"hash/fnv"
 )
 
 type HashTable interface {
@@ -111,7 +111,7 @@ func NewHashTable(bits uint8, b, d, t int, hash hash.Hash) (HashTable, error) {
 		table[i] = NewBucket(b)
 	}
 	if hash == nil {
-		hash = fnv.New64()
+		hash = sha1.New()
 	}
 	return &hashTable{
 		fp:    fp,
@@ -122,6 +122,14 @@ func NewHashTable(bits uint8, b, d, t int, hash hash.Hash) (HashTable, error) {
 	}, nil
 }
 
+// Defaults
+// 100 cells per bucket // 10 subtables
+const b, d = 100, 10
+
+func NewHashTable_Default32(items int) (HashTable, error) {
+	return NewHashTable(32, b, d, items/b, nil)
+}
+
 func Hash(data []byte, hash hash.Hash) []byte {
 	hash.Reset()
 	hash.Write(data)
@@ -129,16 +137,14 @@ func Hash(data []byte, hash hash.Hash) []byte {
 	return h
 }
 
-// Shuffles the hash so a different
+// Scrambles the hash so a different
 // remainder is extracted next permutation
-func Shuffle(h []byte) {
-	copy(h, append(h[1:], h[0]))
+func scrambleBits(h []byte) {
 	i := int(h[0]) % len(h)
-	h[0], h[i] = h[i], h[0]
-}
-
-func (ht *hashTable) Size() int {
-	return len(ht.table)
+	copy(h, append(h[i:], h[:i]...))
+	for i := 1; i < len(h); i++ {
+		h[i] ^= h[i-1]
+	}
 }
 
 func (ht *hashTable) Add(data []byte) (int, bool) {
@@ -167,7 +173,7 @@ func (ht *hashTable) Add(data []byte) (int, bool) {
 				members = m
 			}
 		}
-		Shuffle(h)
+		scrambleBits(h)
 	}
 	ht.table[bucket].Insert(fprint) //check result
 	return bucket, true
@@ -188,7 +194,7 @@ func (ht *hashTable) Lookup(data []byte) (int, bool) {
 			bucket = b
 			found = true
 		}
-		Shuffle(h)
+		scrambleBits(h)
 	}
 	if !found {
 		return -1, false
@@ -209,7 +215,7 @@ func (ht *hashTable) GetCount(data []byte) (int, uint8) {
 			bucket = b
 			count = c
 		}
-		Shuffle(h)
+		scrambleBits(h)
 	}
 	if count == 0 {
 		return -1, 0
@@ -232,7 +238,7 @@ func (ht *hashTable) ConcurrentLookup(data []byte) (int, bool) {
 				close(ch)
 			}
 		}(h, i)
-		Shuffle(h)
+		scrambleBits(h)
 	}
 	bucket := <-ch
 	if bucket < 0 {
@@ -259,7 +265,7 @@ func (ht *hashTable) Delete(data []byte) (int, bool) {
 			found = true
 			fprint = fp
 		}
-		Shuffle(h)
+		scrambleBits(h)
 	}
 	if found {
 		ht.table[bucket].Remove(fprint) //check result

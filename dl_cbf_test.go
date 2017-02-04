@@ -1,7 +1,6 @@
 package dl_cbf
 
 import (
-	"crypto/sha1"
 	"math/rand"
 	"testing"
 )
@@ -25,7 +24,7 @@ func GenerateDatas(size int) [][]byte {
 	return datas
 }
 
-var ht32, _ = NewHashTable(32, 4, 10, 10000, sha1.New())
+var ht32, _ = NewHashTable_Default32(100000000)
 var datas = GenerateDatas(10000000)
 
 // 32-bit framework
